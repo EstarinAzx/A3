@@ -1,4 +1,4 @@
-package nz.ac.ara.sbt.eyeballmaze;
+package nz.ac.ara.bcde223.minimala3skeleton.model;
 
 /**
  * Abstract base class representing a square on the game board.

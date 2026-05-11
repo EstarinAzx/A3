@@ -1,4 +1,4 @@
-package nz.ac.ara.sbt.eyeballmaze;
+package nz.ac.ara.bcde223.minimala3skeleton.model;
 
 import java.util.ArrayList;
 import java.util.List;

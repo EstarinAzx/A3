@@ -1,4 +1,4 @@
-package nz.ac.ara.sbt.eyeballmaze;
+package nz.ac.ara.bcde223.minimala3skeleton.model;
 
 public interface IGoalHolder {
     public void addGoal(int row, int column);

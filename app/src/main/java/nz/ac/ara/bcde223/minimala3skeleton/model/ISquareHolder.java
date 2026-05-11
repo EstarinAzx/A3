@@ -1,4 +1,4 @@
-package nz.ac.ara.sbt.eyeballmaze;
+package nz.ac.ara.bcde223.minimala3skeleton.model;
 
 public interface ISquareHolder {
     public void addSquare(Square square, int row, int column);
