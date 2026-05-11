@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-05-12 — Week 11 Android data management (level data from assets)
+
+### Done
+- Added `app/src/main/assets/level1.txt` — a simple level/setup data file (`name`, `height`, `width`, `eyeball=row,col,DIR`, `goals=r,c;r,c`, then a `squares=` section with one comma-separated row per line; each cell is `BLANK` or `COLOR-SHAPE`, e.g. `PURPLE-LIGHTNING`). It encodes the existing 4×4 level exactly.
+- `GameViewModel` no longer hardcodes the level. New `loadLevel(String levelText)` parses the file text and builds the `Game` (`addLevel` → `addSquare` per cell → `addEyeball` → `addGoal`); it caches the text so `reset()` rebuilds the same level. The no-arg constructor now builds nothing — callers must `loadLevel(...)` first. `getLevelName()` returns the `name` from the file instead of a constant. Still **no** rule logic in the view-model — parsing is pure data → model-call translation.
+- `MainActivity.onCreate` reads `assets/level1.txt` via a small `readAsset(...)` helper (`getAssets().open(...)` + `BufferedReader`, same pattern as the Week 11 `SetupDataFromAssetsDemo`) and calls `viewModel.loadLevel(...)`. On `IOException` it shows "Error loading level file (level1.txt)." in the status text and returns early (no crash, buttons just inert).
+
+### A2/A3 boundary
+- Game rules, move validity, win/lose all still live in `model/`. The new code only turns file text into the same `Game` setup calls the view-model used to make inline.
+
+### Build/run
+- Tests: `./gradlew test` — still green (model untouched).
+- Build APK: `./gradlew assembleDebug` — BUILD SUCCESSFUL.
+- Run: Android Studio Run button (Shift+F10) on the Pixel 8 Pro API 37 emulator. **Not yet run on the emulator this session** — verify the board still renders and the forced UP,UP,RIGHT,RIGHT,RIGHT,DOWN,DOWN win path still works.
+
+### Next steps (post-class)
+- Add `level2.txt`, `level3.txt`, … and a level picker (the parser already handles arbitrary sizes/layouts).
+- Optionally: validate the parsed level (size vs. row count, eyeball in bounds) and surface a clearer error.
+
 ## 2026-05-12 — Week 10 Android UI (board grid + win state)
 
 ### Done

@@ -1,5 +1,8 @@
 package nz.ac.ara.bcde223.minimala3skeleton.viewmodel;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import nz.ac.ara.bcde223.minimala3skeleton.model.BlankSquare;
 import nz.ac.ara.bcde223.minimala3skeleton.model.Color;
 import nz.ac.ara.bcde223.minimala3skeleton.model.Direction;
@@ -7,65 +10,146 @@ import nz.ac.ara.bcde223.minimala3skeleton.model.Game;
 import nz.ac.ara.bcde223.minimala3skeleton.model.Message;
 import nz.ac.ara.bcde223.minimala3skeleton.model.PlayableSquare;
 import nz.ac.ara.bcde223.minimala3skeleton.model.Shape;
+import nz.ac.ara.bcde223.minimala3skeleton.model.Square;
 
 /**
  * Sits between the Android UI and the Eyeball Maze {@link Game} model.
- * It owns a {@code Game}, builds the starter level, and exposes simple
- * read-only accessors for rendering plus a {@link #tryMove(Direction)} that
- * delegates all rule decisions to the model.
+ * It owns a {@code Game}, builds a level from a level-data file
+ * (see {@code assets/level1.txt}), and exposes simple read-only accessors for
+ * rendering plus a {@link #tryMove(Direction)} that delegates all rule
+ * decisions to the model.
+ *
+ * <p>This class does <em>no</em> rule logic: loading a level just translates the
+ * file's data into model calls ({@code addLevel}, {@code addSquare},
+ * {@code addEyeball}, {@code addGoal}); move validity and win/lose stay in the
+ * {@code model} package.</p>
  */
 public class GameViewModel {
 
-    private static final String LEVEL_NAME = "Level 1";
-
     private Game game;
     private int totalGoals;
+    private String levelName = "Level";
 
+    /** Raw text of the level file, kept so {@link #reset()} can rebuild it. */
+    private String levelData;
+
+    /**
+     * Creates an empty view-model. Call {@link #loadLevel(String)} with the
+     * contents of a level file before using any of the board accessors.
+     */
     public GameViewModel() {
+    }
+
+    /**
+     * Loads a level from the text of a level file (see {@code assets/level1.txt}).
+     * The text is remembered so {@link #reset()} can rebuild the same level.
+     */
+    public void loadLevel(String levelText) {
+        this.levelData = levelText;
         reset();
     }
 
-    /** Rebuilds the level from scratch (used by the Reset / Play-again buttons). */
+    /** Rebuilds the current level from scratch (used by Reset / Play-again). */
     public void reset() {
         game = new Game();
-        setupStarterLevel();
-        // The model removes goals as they are completed, so remember the original
-        // count to track progress and detect a win.
+        buildLevelFrom(levelData);
+        // The model removes goals as they are completed, so remember the
+        // original count to track progress and detect a win.
         totalGoals = game.getGoalCount();
     }
 
-    private void setupStarterLevel() {
-        game.addLevel(4, 4);
+    // ==================== Level-file parsing ====================
 
-        game.addSquare(new BlankSquare(), 0, 0);
-        game.addSquare(new BlankSquare(), 0, 1);
-        game.addSquare(new PlayableSquare(Color.PURPLE, Shape.LIGHTNING), 0, 2);
-        game.addSquare(new BlankSquare(), 0, 3);
+    private void buildLevelFrom(String levelText) {
+        String name = "Level";
+        int height = 0;
+        int width = 0;
+        int eyeballRow = 0;
+        int eyeballCol = 0;
+        Direction eyeballDir = Direction.UP;
+        List<int[]> goals = new ArrayList<>();
+        List<String> boardRows = new ArrayList<>();
 
-        game.addSquare(new PlayableSquare(Color.BLUE, Shape.CROSS), 1, 0);
-        game.addSquare(new PlayableSquare(Color.BLUE, Shape.STAR), 1, 1);
-        game.addSquare(new PlayableSquare(Color.YELLOW, Shape.STAR), 1, 2);
-        game.addSquare(new PlayableSquare(Color.YELLOW, Shape.DIAMOND), 1, 3);
+        boolean readingSquares = false;
+        for (String rawLine : levelText.split("\\r?\\n")) {
+            String line = rawLine.trim();
+            if (line.isEmpty()) {
+                continue;
+            }
+            if (readingSquares) {
+                boardRows.add(line);
+                continue;
+            }
 
-        game.addSquare(new PlayableSquare(Color.RED, Shape.CROSS), 2, 0);
-        game.addSquare(new PlayableSquare(Color.GREEN, Shape.FLOWER), 2, 1);
-        game.addSquare(new PlayableSquare(Color.PURPLE, Shape.CROSS), 2, 2);
-        game.addSquare(new PlayableSquare(Color.GREEN, Shape.DIAMOND), 2, 3);
+            int eq = line.indexOf('=');
+            if (eq < 0) {
+                continue;
+            }
+            String key = line.substring(0, eq).trim();
+            String value = line.substring(eq + 1).trim();
 
-        game.addSquare(new PlayableSquare(Color.RED, Shape.DIAMOND), 3, 0);
-        game.addSquare(new PlayableSquare(Color.YELLOW, Shape.LIGHTNING), 3, 1);
-        game.addSquare(new PlayableSquare(Color.BLUE, Shape.FLOWER), 3, 2);
-        game.addSquare(new PlayableSquare(Color.GREEN, Shape.FLOWER), 3, 3);
+            switch (key) {
+                case "name":
+                    name = value;
+                    break;
+                case "height":
+                    height = Integer.parseInt(value);
+                    break;
+                case "width":
+                    width = Integer.parseInt(value);
+                    break;
+                case "eyeball": {
+                    String[] parts = value.split(",");
+                    eyeballRow = Integer.parseInt(parts[0].trim());
+                    eyeballCol = Integer.parseInt(parts[1].trim());
+                    eyeballDir = Direction.valueOf(parts[2].trim().toUpperCase());
+                    break;
+                }
+                case "goals":
+                    for (String pair : value.split(";")) {
+                        String[] coords = pair.split(",");
+                        goals.add(new int[]{
+                                Integer.parseInt(coords[0].trim()),
+                                Integer.parseInt(coords[1].trim())
+                        });
+                    }
+                    break;
+                case "squares":
+                    readingSquares = true;
+                    break;
+                default:
+                    break;
+            }
+        }
 
-        game.addEyeball(3, 0, Direction.UP);
-        game.addGoal(1, 2);
-        game.addGoal(3, 3);
+        levelName = name;
+        game.addLevel(height, width);
+        for (int row = 0; row < boardRows.size(); row++) {
+            String[] cells = boardRows.get(row).split(",");
+            for (int col = 0; col < cells.length; col++) {
+                game.addSquare(squareFromToken(cells[col].trim()), row, col);
+            }
+        }
+        game.addEyeball(eyeballRow, eyeballCol, eyeballDir);
+        for (int[] goal : goals) {
+            game.addGoal(goal[0], goal[1]);
+        }
+    }
+
+    private static Square squareFromToken(String token) {
+        if (token.equalsIgnoreCase("BLANK") || token.equals(".")) {
+            return new BlankSquare();
+        }
+        String[] parts = token.split("-");
+        Color color = Color.valueOf(parts[0].trim().toUpperCase());
+        Shape shape = Shape.valueOf(parts[1].trim().toUpperCase());
+        return new PlayableSquare(color, shape);
     }
 
     // ==================== Board state for the UI ====================
 
     public String getLevelName() {
-        return LEVEL_NAME;
+        return levelName;
     }
 
     public int getRows() {

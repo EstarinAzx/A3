@@ -14,6 +14,10 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.snackbar.Snackbar;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
 import nz.ac.ara.bcde223.minimala3skeleton.R;
 import nz.ac.ara.bcde223.minimala3skeleton.model.Color;
 import nz.ac.ara.bcde223.minimala3skeleton.model.Direction;
@@ -31,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int CELL_DP = 64;
     private static final int CELL_MARGIN_DP = 2;
+    private static final String LEVEL_ASSET = "level1.txt";
 
     private GameViewModel viewModel;
     private View rootView;
@@ -60,6 +65,13 @@ public class MainActivity extends AppCompatActivity {
         leftButton = findViewById(R.id.leftButton);
         rightButton = findViewById(R.id.rightButton);
         resetButton = findViewById(R.id.resetButton);
+
+        try {
+            viewModel.loadLevel(readAsset(LEVEL_ASSET));
+        } catch (IOException e) {
+            statusText.setText("Error loading level file (" + LEVEL_ASSET + ").");
+            return;
+        }
 
         upButton.setOnClickListener(v -> handleMove(Direction.UP));
         downButton.setOnClickListener(v -> handleMove(Direction.DOWN));
@@ -164,6 +176,19 @@ public class MainActivity extends AppCompatActivity {
 
     private int dpToPx(int dp) {
         return Math.round(dp * getResources().getDisplayMetrics().density);
+    }
+
+    /** Reads a UTF-8 text file bundled in {@code src/main/assets/}. */
+    private String readAsset(String fileName) throws IOException {
+        StringBuilder builder = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(getAssets().open(fileName)))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                builder.append(line).append('\n');
+            }
+        }
+        return builder.toString();
     }
 
     private static String describe(Message message) {
