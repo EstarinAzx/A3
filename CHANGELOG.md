@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-05-12 — Week 10 Android UI (board grid + win state)
+
+### Done
+- Replaced the toy 3×3 all-RED-DIAMOND starter level in `GameViewModel` with a real 4×4 Eyeball Maze level: blanks in the top row, mixed colours/shapes, **two** goals (at (1,2) and (3,3)). The single-step direction buttons follow a forced path that reaches both goals — i.e. a win is actually achievable, no soft-locks.
+- `GameViewModel` now exposes read-only board accessors for rendering (`getRows/getCols`, `getColorAt`, `getShapeAt`, `isBlankAt`, `hasGoalAt`, `isEyeballAt`, `getEyeballDirection`, `getCompletedGoals`, `getTotalGoals`, `isWon`, `getLevelName`) plus a `reset()` that rebuilds the level. It still does **no** rule logic — `tryMove` delegates to `messageIfMovingTo` / `moveTo`.
+- Fixed the status-text goal denominator: the model removes goals as they're completed, so the view-model remembers the original `totalGoals` and reports `completed/totalGoals` instead of the model's shrinking `getGoalCount()`.
+- `MainActivity` now renders the board as a `GridLayout` of coloured cells (one `TextView` per square, rebuilt after every move): background = square colour, label = shape initial (D/C/S/F/L), `*` suffix marks a goal, the eyeball cell shows a direction arrow (▲▼◀▶). Blank squares are dark grey with no label.
+- Added a win flow: landing on the last goal pops an `AlertDialog` ("You win! — Play again?"), disables the move buttons, and offers Reset/Play-again to rebuild the level. A standalone **Reset** button is always available.
+- Move-failure feedback is now human-readable (e.g. "Can't move backwards", "the next square must share this colour or shape") instead of the raw `Message` enum name; success no longer shows a Snackbar.
+- Layout wrapped in a `ScrollView` so the board + controls fit on small screens.
+
+### Build/run
+- Tests: `./gradlew test` (model tests still green)
+- Build APK: `./gradlew assembleDebug`
+- Run: Android Studio Run button (Shift+F10) on the Pixel 8 Pro API 37 emulator.
+
+### Next steps (post-class)
+- Render shapes as actual icons/drawables instead of letters.
+- Support multi-square moves (the real game slides the eyeball along a row/col to a chosen square) — likely tap-a-cell instead of (or alongside) the four buttons. `Game.moveTo` already takes an arbitrary destination, so this is a UI/ViewModel change.
+- Add more levels and a level picker; give `Level` a real name.
+- Show a "no moves left" lose state (currently you can only get stuck, never told).
+
 ## 2026-05-12 — Week 09 Android Core (A2 → A3 bridge)
 
 ### Done

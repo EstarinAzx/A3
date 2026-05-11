@@ -26,12 +26,18 @@ Layering as built:
   ISquareHolder, IEyeballHolder, IMoving`. Key methods: `addLevel`, `addSquare`,
   `addEyeball`, `addGoal`, `moveTo(row,col)`, `messageIfMovingTo(row,col)` → `Message`,
   `canMoveTo`, `getEyeballRow/Column/Direction`, `getGoalCount`, `getCompletedGoalCount`.
-- `viewmodel/GameViewModel` — owns a `Game`, sets up the starter level, exposes
-  `getStatusText()` and `tryMove(Direction)`. The viewmodel does *no* rule logic;
-  `tryMove` just bounds-checks the grid, asks `messageIfMovingTo`, and calls `moveTo`
-  if the result is `Message.OK`.
-- `ui/MainActivity` — binds 4 direction buttons, calls `viewModel.tryMove(...)`,
-  shows the returned `Message` in a Snackbar, refreshes the status TextView.
+- `viewmodel/GameViewModel` — owns a `Game`, sets up the starter level, and exposes
+  read-only board accessors for rendering (`getRows/getCols`, `getColorAt`, `getShapeAt`,
+  `isBlankAt`, `hasGoalAt`, `isEyeballAt`, `getEyeballDirection`, `getCompletedGoals`,
+  `getTotalGoals`, `isWon`, `getLevelName`, `getStatusText`) plus `tryMove(Direction)` and
+  `reset()`. The viewmodel does *no* rule logic; `tryMove` just bounds-checks the grid, asks
+  `messageIfMovingTo`, and calls `moveTo` if the result is `Message.OK`. It remembers the
+  original goal count (`totalGoals`) because the model removes goals as they're completed.
+- `ui/MainActivity` — binds 4 direction buttons + a Reset button, calls `viewModel.tryMove(...)`,
+  shows a human-readable Snackbar on a failed move, redraws the board grid and status text after
+  every move, and on a win pops an `AlertDialog` ("Play again?") + disables the move buttons.
+  The board is rendered programmatically as a `GridLayout` of `TextView` cells (background =
+  square colour, label = shape initial D/C/S/F/L, `*` = goal, arrow ▲▼◀▶ = eyeball).
 
 ## Repo layout (the parts that matter)
 
@@ -45,7 +51,7 @@ MyApplication/                         <- Android project root, git root
         model/                         <- A2 Eyeball Maze model (15 files), package nz.ac.ara.bcde223.minimala3skeleton.model
         ui/MainActivity.java
         viewmodel/GameViewModel.java
-      res/layout/activity_main.xml     <- plain vertical LinearLayout, white bg, Up/Left/Right/Down buttons + status TextView
+      res/layout/activity_main.xml     <- ScrollView > vertical LinearLayout, white bg: level-name text, empty GridLayout (filled in code), status text, Up/Left/Right/Down + Reset buttons
       res/values/themes.xml            <- Theme.MaterialComponents.DayNight.DarkActionBar
     src/test/
       java/nz/ac/ara/bcde223/minimala3skeleton/model/   <- 10 migrated A2 JUnit 5 tests (95 tests, all green)
@@ -60,15 +66,17 @@ Its package was `nz.ac.ara.sbt.eyeballmaze`; everything was renamed to
 
 ## Current behaviour
 
-`GameViewModel` builds a deliberately trivial starter level:
-- 3×3 grid, every cell a `PlayableSquare(Color.RED, Shape.DIAMOND)` (so any move passes
-  the colour/shape check)
-- eyeball at row 1, col 1, facing `Direction.RIGHT`
-- one goal at row 1, col 2
+`GameViewModel.setupStarterLevel()` builds a real 4×4 level:
+- top row: blanks at (0,0),(0,1),(0,3); a PURPLE/LIGHTNING square at (0,2)
+- rows 1–3: mixed colours/shapes (see the source for the exact layout)
+- eyeball at (3,0) facing `Direction.UP`
+- two goals: (1,2) and (3,3)
 
-So from the start: **Right** or **Down** → `OK`; **Left** → `BACKWARDS_MOVE` (can't go
-opposite your facing direction); landing on (1,2) bumps `getCompletedGoalCount()` to 1.
-This is a placeholder — see "Next steps".
+The four single-step buttons drive a *forced* path that reaches both goals — the only legal
+sequence is UP, UP, RIGHT, RIGHT, RIGHT, DOWN, DOWN: (3,0)→(2,0)→(1,0)→(1,1)→(1,2 ✓ goal)→
+(1,3)→(2,3)→(3,3 ✓ goal). Any other press gives an invalid-move Snackbar. Completing the second
+goal triggers the win dialog. There are no soft-locks on this path. Replace/extend in
+`setupStarterLevel()` to add levels.
 
 ## How to build / test / run
 
@@ -95,18 +103,16 @@ adds a BOM that `javac` rejects — if you script file copies, use
 
 ## Next steps (post-class TODO, in rough priority order)
 
-1. Replace the toy 3×3 all-RED-DIAMOND starter level in `GameViewModel.setupStarterLevel()`
-   with a real Eyeball Maze level: blank squares, mixed colours/shapes, multiple goals.
-   (The A2 test files — e.g. `TestCompletingGoals.java` — contain example level layouts
-   you can crib.)
-2. Render the actual board grid in the UI (a `GridLayout` of cells, or custom View)
-   instead of just the status text.
-3. Show a win state when `getCompletedGoalCount() == getGoalCount()` (e.g. message in the
-   status text, disable buttons, offer reset).
-4. Optionally support multi-square moves (the real game slides the eyeball along a row/col)
-   — currently buttons move exactly one cell. `Game.moveTo` already takes an arbitrary
-   destination, so this is a UI/ViewModel change, not a model change.
-5. Tidy: consider making `Position` a record (optional).
+1. Render shapes as real icons/drawables instead of the letters D/C/S/F/L; consider drawing
+   the eyeball as a bitmap rather than an arrow glyph.
+2. Support multi-square moves (the real game slides the eyeball along a row/col to a chosen
+   square). Probably tap-a-cell — wire `boardGrid` cells' `OnClickListener` to a
+   `viewModel.tryMoveTo(row, col)` that delegates to `messageIfMovingTo` / `moveTo`. The
+   model already supports arbitrary destinations, so this is a UI/ViewModel change only.
+3. More levels + a level picker; give `Level` a real name (currently `GameViewModel` hardcodes
+   "Level 1").
+4. Add a lose / "no legal moves" state — right now you can get stuck but aren't told.
+5. Tidy: consider making `Position` a record (optional, cosmetic).
 
 ## Git state
 
