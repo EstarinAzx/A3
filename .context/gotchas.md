@@ -41,6 +41,25 @@ Benign zipalign / 16KB-page warning. Install completes right after it. Ignore.
 
 Verified 2026-06-02: buttons, `tryMove`, render, and win all work. When a press seems to do nothing, the model rejected an *illegal* move and `MainActivity` showed a Snackbar explaining why (it may be missed at the bottom of the screen). Eyeball Maze rules: no moving backwards relative to facing, no diagonals, no path through blank squares, and the destination must share **colour or shape** with the current square. From the **starting** square (row 3, col 0, facing UP) only **Up** is legal — Down is backwards, Left is off-board, Right (RED-DIAMOND → YELLOW-LIGHTNING) shares neither. Don't go hunting for a wiring bug; press Up first and watch the Snackbar.
 
+## Layout / rendering
+
+### `targetSdk 36` forces edge-to-edge — content draws behind the system bars / action bar
+
+On API 35+ (`targetSdk 36` here) the window goes edge-to-edge by default. With the
+old `DarkActionBar` theme this clipped the board's **top row** behind the action
+bar. Fix in place: theme is now `…DayNight.NoActionBar` and `MainActivity.onCreate`
+pads `rootView` via `ViewCompat.setOnApplyWindowInsetsListener` (system-bar insets
++ 16dp). If you add a new top-level screen or restore an action bar, expect the
+same clipping and apply insets the same way. See [[decisions]].
+
+### Tinting a `VectorDrawable` flattens its internal colours
+
+The board shape icons are tinted with `ImageView.setColorFilter(int)` (SRC_ATOP),
+which paints **every** non-transparent pixel one colour — any multi-colour detail
+inside the vector is lost. That's why `shape_flower.xml` is a solid white
+silhouette (its centre dot is white, not a contrasting hole): a contrasting inner
+colour would just be overwritten by the filter.
+
 ## Model
 
 ### `Game.getGoalCount()` *shrinks* as goals are completed — don't use it for the "total" denominator

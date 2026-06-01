@@ -6,11 +6,16 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.GridLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.snackbar.Snackbar;
 
@@ -66,6 +71,16 @@ public class MainActivity extends AppCompatActivity {
         rightButton = findViewById(R.id.rightButton);
         resetButton = findViewById(R.id.resetButton);
 
+        // targetSdk 36 forces edge-to-edge: pad the content below the system bars
+        // so the level name clears the status-bar notch, on top of the 16dp design padding.
+        final int basePad = dpToPx(16);
+        ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(basePad + bars.left, basePad + bars.top,
+                    basePad + bars.right, basePad + bars.bottom);
+            return insets;
+        });
+
         try {
             viewModel.loadLevel(readAsset(LEVEL_ASSET));
         } catch (IOException e) {
@@ -119,9 +134,11 @@ public class MainActivity extends AppCompatActivity {
         int sizePx = dpToPx(CELL_DP);
         int marginPx = dpToPx(CELL_MARGIN_DP);
 
+        int iconPx = dpToPx(CELL_DP - 24);
+
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
-                TextView cell = new TextView(this);
+                FrameLayout cell = new FrameLayout(this);
 
                 GridLayout.LayoutParams lp = new GridLayout.LayoutParams();
                 lp.width = sizePx;
@@ -131,30 +148,60 @@ public class MainActivity extends AppCompatActivity {
                 lp.columnSpec = GridLayout.spec(col);
                 cell.setLayoutParams(lp);
 
-                cell.setGravity(Gravity.CENTER);
-                cell.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
-                cell.setTypeface(null, Typeface.BOLD);
-
                 Color color = viewModel.getColorAt(row, col);
                 cell.setBackgroundColor(backgroundFor(color));
-                cell.setTextColor(textColorFor(color));
-                cell.setText(labelFor(row, col));
+                int inkColor = textColorFor(color);
+
+                if (!viewModel.isBlankAt(row, col)) {
+                    addCellContent(cell, row, col, inkColor, iconPx);
+                }
 
                 boardGrid.addView(cell);
             }
         }
     }
 
-    private String labelFor(int row, int col) {
+    /**
+     * Draws the square's shape icon, then (when the eyeball stands here) a
+     * direction token on top, plus an optional goal marker. The shape is always
+     * drawn so every square shows its shape, even under the eyeball.
+     */
+    private void addCellContent(FrameLayout cell, int row, int col, int inkColor, int iconPx) {
+        int shapeRes = shapeDrawable(viewModel.getShapeAt(row, col));
+        if (shapeRes != 0) {
+            ImageView icon = new ImageView(this);
+            icon.setImageResource(shapeRes);
+            icon.setColorFilter(inkColor);
+            icon.setLayoutParams(new FrameLayout.LayoutParams(iconPx, iconPx, Gravity.CENTER));
+            cell.addView(icon);
+        }
+
         if (viewModel.isEyeballAt(row, col)) {
-            String arrow = arrowFor(viewModel.getEyeballDirection());
-            return viewModel.hasGoalAt(row, col) ? arrow + "*" : arrow;
+            int tokenPx = dpToPx(34);
+            TextView eye = new TextView(this);
+            eye.setText(arrowFor(viewModel.getEyeballDirection()));
+            eye.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+            eye.setTypeface(null, Typeface.BOLD);
+            eye.setTextColor(0xFFFFFFFF);
+            eye.setGravity(Gravity.CENTER);
+            eye.setBackgroundResource(R.drawable.eyeball_token);
+            eye.setLayoutParams(new FrameLayout.LayoutParams(tokenPx, tokenPx, Gravity.CENTER));
+            cell.addView(eye);
         }
-        if (viewModel.isBlankAt(row, col)) {
-            return "";
+
+        if (viewModel.hasGoalAt(row, col)) {
+            TextView goal = new TextView(this);
+            goal.setText("*");
+            goal.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+            goal.setTypeface(null, Typeface.BOLD);
+            goal.setTextColor(inkColor);
+            goal.setPadding(0, dpToPx(2), dpToPx(4), 0);
+            goal.setLayoutParams(new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    Gravity.TOP | Gravity.END));
+            cell.addView(goal);
         }
-        String shape = shapeLabel(viewModel.getShapeAt(row, col));
-        return viewModel.hasGoalAt(row, col) ? shape + "*" : shape;
     }
 
     private void showWinDialog() {
@@ -227,15 +274,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private static String shapeLabel(Shape shape) {
+    private static int shapeDrawable(Shape shape) {
         switch (shape) {
-            case DIAMOND:   return "D";
-            case CROSS:     return "C";
-            case STAR:      return "S";
-            case FLOWER:    return "F";
-            case LIGHTNING: return "L";
+            case DIAMOND:   return R.drawable.shape_diamond;
+            case CROSS:     return R.drawable.shape_cross;
+            case STAR:      return R.drawable.shape_star;
+            case FLOWER:    return R.drawable.shape_flower;
+            case LIGHTNING: return R.drawable.shape_lightning;
             case BLANK:
-            default:        return "";
+            default:        return 0;
         }
     }
 }

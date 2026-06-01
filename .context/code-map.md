@@ -1,7 +1,7 @@
 ---
 type: code-map
 project: bcde223-a3-eyeball-maze
-updated: 2026-05-26
+updated: 2026-06-02
 tags: [context, code-map, model]
 ---
 
@@ -51,7 +51,14 @@ All game rules live in the model. The ViewModel is glue (file → model calls; b
 
 | File | What lives here |
 |---|---|
-| `MainActivity.java` | `onCreate` reads `assets/level1.txt` via `readAsset(...)` and calls `viewModel.loadLevel(...)` (on `IOException`: shows error in status text and returns — buttons stay inert, no crash). Wires 4 direction buttons + Reset. `handleMove` calls `viewModel.tryMove`, shows Snackbar on non-`OK` (`describe(Message)` maps enum → user text), `renderBoard()` rebuilds the `GridLayout`, win triggers `showWinDialog()` + disables move buttons. Static helpers `backgroundFor(Color)`, `textColorFor`, `arrowFor(Direction)`, `shapeLabel(Shape)` own the colour/glyph mapping. |
+| `MainActivity.java` | `onCreate` reads `assets/level1.txt` via `readAsset(...)`, calls `viewModel.loadLevel(...)` (on `IOException`: shows error in status text and returns — buttons inert, no crash), and installs a `ViewCompat` window-insets listener padding `rootView` below the system bars (edge-to-edge; theme is NoActionBar). Wires 4 direction buttons + Reset. `handleMove` calls `viewModel.tryMove`, shows Snackbar on non-`OK` (`describe(Message)` maps enum → text), `renderBoard()` rebuilds the `GridLayout`, win triggers `showWinDialog()` + disables move buttons. **`renderBoard` builds one `FrameLayout` per cell** (coloured bg); `addCellContent(...)` adds a centred `ImageView` of the shape (tinted via `setColorFilter`), an eyeball token (`eyeball_token.xml` dark oval + arrow `TextView`) when the eyeball is here, and a corner `*` for goals. Static helpers `backgroundFor(Color)`, `textColorFor`, `arrowFor(Direction)`, `shapeDrawable(Shape)` own the colour/glyph mapping. |
+
+## Board visuals (`app/src/main/res/drawable/`)
+
+| File | What lives here |
+|---|---|
+| `shape_diamond/cross/star/flower/lightning.xml` | White `VectorDrawable` per `Shape`, mapped by `MainActivity.shapeDrawable(Shape)`, tinted per cell at render time. |
+| `eyeball_token.xml` | Dark oval (`#CC000000`) used as the background behind the eyeball's direction arrow so it reads on top of the square's shape. |
 
 ## Level data (`app/src/main/assets/`)
 
@@ -72,7 +79,7 @@ All game rules live in the model. The ViewModel is glue (file → model calls; b
 | "Who decides win?" | `model/Game.java` — `getCompletedGoalCount`; `GameViewModel.isWon()` compares to cached `totalGoals` |
 | "Where's the level data?" | `app/src/main/assets/level1.txt`; parser at `viewmodel/GameViewModel.java` (`buildLevelFrom`) |
 | "How are buttons wired to the model?" | `ui/MainActivity.java` `onCreate` → `handleMove` → `viewModel.tryMove(Direction)` |
-| "How does the board get drawn?" | `ui/MainActivity.java` `renderBoard()` (programmatic `GridLayout`, one `TextView` per cell) |
+| "How does the board get drawn?" | `ui/MainActivity.java` `renderBoard()` + `addCellContent()` (programmatic `GridLayout`, one `FrameLayout` per cell, shape `ImageView` from `res/drawable/shape_*`) |
 | "Where's the colour palette?" | `ui/MainActivity.java` `backgroundFor(Color)` / `textColorFor(Color)` |
 | "How do I add a level?" | Add `assets/levelN.txt` (parser already handles arbitrary sizes); UI to choose levels doesn't exist yet — see [[active-work]] |
 

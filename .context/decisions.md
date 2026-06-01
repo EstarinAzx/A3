@@ -69,8 +69,41 @@ If the data format needs to grow (e.g. per-level move limits, themes, multi-leve
 
 ---
 
+## 2026-06-02 — Board shapes are white vector drawables on coloured cells, not the supplied GIF tiles
+
+**Decision:** Render each square's shape as a white `VectorDrawable`
+(`res/drawable/shape_*.xml`) centred on the colour-blocked cell and tinted at
+runtime (`ImageView.setColorFilter`, white — black on yellow for contrast).
+Letters (`shapeLabel`) are gone; `shapeDrawable(Shape)` maps the enum to a
+drawable id.
+**Why:** The classic Eyeball Maze GIFs in `../images/` are colour-baked shapes on
+an **opaque white box** (can't overlay cleanly, can't tint), and the set is
+incomplete for this puzzle — lightning exists only in purple, other shapes never
+in purple, so `PURPLE-CROSS` / `YELLOW-LIGHTNING` have no tile. Vectors give one
+clean glyph per shape that works on any cell colour and scales to any cell size.
+The colour rule stays conveyed by the cell background, the shape by the icon.
+**Reversibility:** easy (swap `shapeDrawable` back to text, or to `ImageView`
+GIFs if a complete tinted set is ever produced).
+
+---
+
+## 2026-06-02 — Theme is `NoActionBar`; content insets handled in code (edge-to-edge)
+
+**Decision:** Both `themes.xml` use `Theme.MaterialComponents.DayNight.NoActionBar`,
+and `MainActivity.onCreate` installs a `ViewCompat.setOnApplyWindowInsetsListener`
+that pads `rootView` by the system-bar insets (plus the existing 16dp).
+**Why:** `targetSdk 36` forces edge-to-edge; with the old `DarkActionBar` theme the
+ScrollView content drew **behind** the action bar and the board's top row was
+clipped. The "Minimal A3 Skeleton" action bar was also redundant —
+`levelNameText` already shows the level name. NoActionBar + manual insets removes
+the bar and keeps the level name clear of the status-bar notch.
+**Reversibility:** easy (restore `DarkActionBar` parent, drop the insets listener),
+but then re-solve the clipping.
+
+---
+
 ## Related
 
 - [[overview]] — How to run (both paths)
 - [[code-map]] — where decisions show up in code
-- [[gotchas]] — emulator-asleep black screen; "dead buttons" = rule rejection
+- [[gotchas]] — edge-to-edge clipping; emulator-asleep black screen; "dead buttons" = rule rejection

@@ -17,7 +17,7 @@ tags: [context, overview, android, assignment]
 Layering as built:
 - **`model/`** — A2 Eyeball Maze model (15 files). `Game` implements `ILevelHolder, IGoalHolder, ISquareHolder, IEyeballHolder, IMoving`. See [[code-map]].
 - **`viewmodel/GameViewModel`** — owns a `Game`. **Level is loaded from a data file**, not hardcoded: `loadLevel(text)` parses `assets/level1.txt` into model calls (`addLevel` → `addSquare` per cell → `addEyeball` → `addGoal`) and caches the text so `reset()` rebuilds the same level. Exposes read-only board accessors plus `tryMove(Direction)`. No rule logic.
-- **`ui/MainActivity`** — reads the asset, calls `viewModel.loadLevel(...)`, binds 4 direction buttons + Reset, renders the board as a programmatic `GridLayout` of `TextView` cells (background = colour, label = shape initial D/C/S/F/L, `*` = goal, arrow ▲▼◀▶ = eyeball), shows Snackbar on invalid move, AlertDialog on win.
+- **`ui/MainActivity`** — reads the asset, calls `viewModel.loadLevel(...)`, binds 4 direction buttons + Reset, renders the board as a programmatic `GridLayout` of `FrameLayout` cells (background = colour, a white shape `ImageView` per `Shape` from `res/drawable/shape_*`, corner `*` = goal, eyeball = direction arrow ▲▼◀▶ in a dark token on top of the shape), shows Snackbar on invalid move, AlertDialog on win. Theme is `NoActionBar`; `onCreate` applies window insets so content clears the system bars (edge-to-edge under `targetSdk 36`).
 
 ## Layout
 
