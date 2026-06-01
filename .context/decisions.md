@@ -1,7 +1,7 @@
 ---
 type: decisions
 project: bcde223-a3-eyeball-maze
-updated: 2026-05-26
+updated: 2026-06-02
 tags: [context, decisions]
 ---
 
@@ -61,8 +61,16 @@ If the data format needs to grow (e.g. per-level move limits, themes, multi-leve
 
 ---
 
+## 2026-06-02 — App is run from the terminal via `run.ps1`, not Android Studio
+
+**Decision:** Launch/iterate on the app with a project-root PowerShell script (`run.ps1`): boot the emulator if none is attached, `gradlew installDebug`, wake+unlock the screen, `am start` MainActivity. The Android Studio Run button stays documented as the alternative but is not the primary workflow.
+**Why:** User explicitly does not want to use Android Studio for running. The SDK tools (`emulator.exe`, `adb.exe`) live under `%LOCALAPPDATA%\Android\Sdk` and aren't on PATH, so the script calls them by full path. Wake+unlock is baked in because a cold-booted emulator sleeps and shows a black screen (see [[gotchas]]).
+**Reversibility:** easy (delete the script; Gradle + adb still work directly).
+
+---
+
 ## Related
 
-- [[overview]]
+- [[overview]] — How to run (both paths)
 - [[code-map]] — where decisions show up in code
-- [[gotchas]] — consequences of the model-is-truth rule
+- [[gotchas]] — emulator-asleep black screen; "dead buttons" = rule rejection

@@ -1,7 +1,7 @@
 ---
 type: gotchas
 project: bcde223-a3-eyeball-maze
-updated: 2026-05-26
+updated: 2026-06-02
 tags: [context, gotchas, android, windows]
 ---
 
@@ -34,6 +34,12 @@ Tap the emulator screen or press its power button. `logcat` will show `Displayed
 ### `PackageManager: Error occurred while checking alignment of package` in logcat
 
 Benign zipalign / 16KB-page warning. Install completes right after it. Ignore.
+
+## Gameplay (looks like a bug, isn't)
+
+### "The direction buttons don't move the eyeball" = the move is illegal, not a dead button
+
+Verified 2026-06-02: buttons, `tryMove`, render, and win all work. When a press seems to do nothing, the model rejected an *illegal* move and `MainActivity` showed a Snackbar explaining why (it may be missed at the bottom of the screen). Eyeball Maze rules: no moving backwards relative to facing, no diagonals, no path through blank squares, and the destination must share **colour or shape** with the current square. From the **starting** square (row 3, col 0, facing UP) only **Up** is legal — Down is backwards, Left is off-board, Right (RED-DIAMOND → YELLOW-LIGHTNING) shares neither. Don't go hunting for a wiring bug; press Up first and watch the Snackbar.
 
 ## Model
 

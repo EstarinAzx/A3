@@ -1,57 +1,56 @@
 ---
 type: active-work
 project: bcde223-a3-eyeball-maze
-updated: 2026-05-26
+updated: 2026-06-02
 tags: [context, active-work]
 ---
 
 # Active Work
 
-_Last updated: 2026-05-26 by Opus 4.7 (auto)_
-_At commit: `8eee44b`_
+_Last updated: 2026-06-02 by Opus 4.8 (1M) (auto)_
+_At commit: `5bb1838` (+ untracked `run.ps1`, committed this session)_
 
 ## Current focus
 
-Just finished the **Week 11 (Android data management)** check-in slice: moved the hardcoded 4×4 level out of `GameViewModel` into `assets/level1.txt` and added a parser. Code is committed; the in-class check-in submission is still owed.
+Verified the Week 11 build actually runs and plays correctly on the emulator, and added a terminal-only run workflow (`run.ps1`) so the app can be launched without Android Studio.
 
 ## State
 
-- **In flight:** Nothing in code. Open loops are non-coding: (1) submit Week 11 check-in to the course site, (2) smoke-test on the emulator.
+- **In flight:** Nothing in code.
 - **Done this session:**
-  - New `app/src/main/assets/level1.txt` encoding the existing 4×4 level.
-  - `GameViewModel.loadLevel(text)` parses it into `addLevel`/`addSquare`/`addEyeball`/`addGoal`; `reset()` re-parses cached text; `getLevelName()` now returns the file's `name`. No-arg constructor builds nothing.
-  - `MainActivity.readAsset(...)` reads the asset at startup; `IOException` → status text error + early return (no crash).
-  - `CHANGELOG.md` + `HANDOFF.md` updated. Committed as `8eee44b`. **Not pushed.**
+  - **Investigated a "buttons don't move the player" report → not a bug.** Drove the emulator via `adb` and confirmed every legal move works: the forced win path `UP,UP,RIGHT,RIGHT,RIGHT,DOWN,DOWN` walks the eyeball (3,0)→(3,3), completes both goals, fires the win dialog. The apparent "dead buttons" were the model correctly rejecting *illegal* moves (backwards / off-board / no shared colour-or-shape), each surfaced via Snackbar. From the start square (3,0 facing UP) only **Up** is legal. See [[gotchas]].
+  - Added `run.ps1` at project root — one-click: boot emulator if none attached → wait for boot → `gradlew installDebug` → wake+unlock screen → launch `MainActivity`. See [[overview]] (How to run).
+  - Diagnostic `Log.d` calls were added to `MainActivity.handleMove` / temporary accessors on `GameViewModel` during the investigation, then **fully reverted** — model/viewmodel/activity are byte-identical to `5bb1838`.
 - **Blocked:** None.
 
 ## Pick up here
 
-If continuing A3 work, the most useful next step is **multi-square moves** (tap a cell instead of one-step buttons) — the model already supports arbitrary destinations via `Game.moveTo(row,col)`, so it's a UI/ViewModel change only. Wire `boardGrid` cells' `OnClickListener` to a new `viewModel.tryMoveTo(row, col)` that delegates to `messageIfMovingTo` / `moveTo`. Don't touch the model.
+Still the most useful next code slice: **multi-square moves** (tap a cell instead of one-step buttons) — the model already supports arbitrary destinations via `Game.moveTo(row,col)`, so it's a UI/ViewModel change only. Wire `boardGrid` cells' `OnClickListener` to a new `viewModel.tryMoveTo(row,col)` that delegates to `messageIfMovingTo` / `moveTo`. Don't touch the model.
 
-If the user wants to keep building the data-management story instead: add `assets/level2.txt`, add a level-picker (an `AlertDialog` listing assets, or a separate Activity), and have `GameViewModel.loadLevel(...)` get called from the picker selection.
+Alternative data-management slice: add `assets/level2.txt` + a level-picker (`AlertDialog` listing assets) that calls `GameViewModel.loadLevel(...)`.
 
-Other pending items:
-- Smoke-test the current build on the Pixel 8 Pro API 37 emulator (Shift+F10 in Android Studio). Verify the board renders and the forced win path `UP,UP,RIGHT,RIGHT,RIGHT,DOWN,DOWN` still completes.
-- Optionally: `git push` the `8eee44b` commit to `origin/main` (GitHub remote `https://github.com/EstarinAzx/A3.git`).
-- Submit Week 11 check-in (screenshot + one-sentence "supports A3 because…" + "next A3 step is…").
+Other pending (non-code):
+- Submit the Week 11 check-in to the course site (screenshot + one-sentence "supports A3 because…" / "next A3 step is…").
+
+## How to run (quick ref)
+
+```powershell
+.\run.ps1                 # boot emulator, build, install, launch
+.\run.ps1 -Avd OtherName  # different AVD
+```
+Black screen after launch = emulator asleep; `run.ps1` now wakes+unlocks, but a still-booting cold emulator can take ~30s — tap the screen if needed. See [[gotchas]].
 
 ## Skills for next session
 
-- None obviously matching. (`/loop` or `/schedule` only if you want recurring builds; `/review` only if a PR's involved.)
+- None obviously matching. `/run` or `/verify` if you want the harness to launch + check the app again.
 
 ## Open questions
 
 - None pending the user.
 
-## Recent context
-
-- The level-data file format was chosen to extend the Week 11 `SetupDataFromAssetsDemo` shape with a `squares=` block (the demo file only had `name/height/width/eyeball/goals`); the A2 model requires square data so we couldn't skip it. Each cell is `BLANK` or `COLOR-SHAPE`. Decided not to reach for JSON/YAML — line-oriented `key=value` is enough.
-- `Color`/`Shape` enums have `BLANK` in the middle, not last — parsing uses `valueOf`, so order doesn't matter, but switch-on-ordinal would bite.
-- Asset-load errors currently surface as a status-text message rather than a Snackbar/dialog so they're visible even when buttons are inert.
-
 ## Related
 
-- [[overview]] — architecture and the model-is-truth rule
-- [[code-map]] — where to put the next slice
-- [[decisions]] — level-data format is now codified
-- [[gotchas]] — `Game.getGoalCount()` shrinks; the cached `totalGoals` matters
+- [[overview]] — architecture, the model-is-truth rule, How to run
+- [[code-map]] — where the next slice goes
+- [[decisions]] — A2/A3 boundary, data-file format, terminal run workflow
+- [[gotchas]] — "dead buttons" = rule rejection; emulator-asleep black screen

@@ -1,7 +1,7 @@
 ---
 type: overview
 project: bcde223-a3-eyeball-maze
-updated: 2026-05-26
+updated: 2026-06-02
 tags: [context, overview, android, assignment]
 ---
 
@@ -34,7 +34,8 @@ Layering as built:
 
 - **Test:** `./gradlew.bat test` (Windows) — compiles main + test, runs the 10 model test classes
 - **Build APK:** `./gradlew.bat assembleDebug`
-- **Run:** Android Studio Run button (Shift+F10), target = Pixel 8 Pro API 37 emulator (or any API 28+ device)
+- **Run (one-click, no IDE):** `.\run.ps1` — boots the emulator if none is attached, `gradlew installDebug`, wakes+unlocks the screen, launches `MainActivity`. `-Avd <name>` to pick a different AVD. Auto-finds the SDK at `%LOCALAPPDATA%\Android\Sdk` (edit `$sdk` if elsewhere).
+- **Run (IDE):** Android Studio Run button (Shift+F10), target = Pixel 8 Pro API 37 emulator (or any API 28+ device)
 
 ## User-facing surface
 
